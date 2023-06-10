@@ -1,0 +1,161 @@
+import tkinter as tk
+from tkinter import ttk
+from tkinter.messagebox import showerror
+import math as ma
+
+# variables
+angle_l = 0
+angle_w = 0
+
+disp_surface = 0
+pol_surface = 0
+
+disp_w = 21.8
+pol_w = 51
+disp_diio = 48.6
+pol_diio = 2.4
+disp_gly = 37
+pol_gly = 26.4
+disp_dmso = 36
+pol_dmso = 8
+disp_dmf = 24
+pol_dmf = 10.4
+disp_thio = 39.2
+pol_thio = 14.8
+
+choice = 1
+
+disp_liquid = disp_diio
+pol_liquid = pol_diio
+total_liquid = disp_liquid + pol_liquid
+total_water = disp_w + pol_w
+total_surface = disp_surface + pol_surface
+
+# GUI window
+root = tk.Tk()
+root.title('Surface Free Energy Calculator')
+root.geometry('650x120')
+root.resizable(False, False)
+frame = ttk.Frame(root)
+options = {'padx': 5, 'pady': 5}
+
+# selection of liquids
+def sel():
+    choice = int(var.get())
+    if choice == 1:
+        pol_liquid = pol_gly
+        disp_liquid = disp_gly
+
+    elif choice == 2:
+        pol_liquid = pol_dmso
+        disp_liquid = disp_dmso
+
+    elif choice == 3:
+        pol_liquid = pol_dmf
+        disp_liquid = disp_dmf
+
+    elif choice == 4:
+        pol_liquid = pol_thio
+        disp_liquid = disp_thio
+
+    elif choice == 5:
+        pol_liquid = pol_diio
+        disp_liquid = disp_diio
+
+    else:
+        print('error')
+
+    return pol_liquid, disp_liquid
+
+
+# radiobuttons - liquid selection
+var = tk.IntVar()
+l_glycerol = ttk.Radiobutton(frame, text="Glycerol", variable=var, value=1, command=sel)
+l_glycerol.grid(row=0, column=2, sticky='W')
+l_dmso = ttk.Radiobutton(frame, text="Dimethylsulfoxide", variable=var, value=2, command=sel)
+l_dmso.grid(row=0, column=4, sticky='W')
+l_dmf = ttk.Radiobutton(frame, text="Dimethylformamide", variable=var, value=3, command=sel)
+l_dmf.grid(row=1, column=0, sticky='E')
+l_thio = ttk.Radiobutton(frame, text="Thiodiglycol", variable=var, value=4, command=sel)
+l_thio.grid(row=1, column=2, sticky='W')
+l_diio = ttk.Radiobutton(frame, text="Diiodomethane", variable=var, value=5, command=sel)
+l_diio.grid(row=1, column=4, sticky='W')
+
+
+# equations
+def sfe_calculation(angle_l, angle_w):
+    pol_liquid, disp_liquid = sel()
+
+    disp_surface = ((total_liquid * (ma.cos(angle_l) + 1)) -
+                    (ma.sqrt(pol_liquid / pol_w)) * total_water * (ma.cos(angle_w) + 1)) / \
+                   (2 * (ma.sqrt(disp_liquid)) - (ma.sqrt(pol_liquid * (pol_w / pol_liquid))))
+
+    pol_surface = ((total_water * (ma.cos(angle_w) + 1) - 2 * ma.sqrt(disp_surface * disp_surface * disp_w))) / \
+                  (2 * ma.sqrt(pol_w))
+
+    print('liquid', pol_liquid, disp_liquid, total_liquid, 'result', pol_surface, disp_surface)
+
+    return disp_surface, pol_surface
+
+
+select_l_label = ttk.Label(frame, text='Select liquid:')
+select_l_label.grid(column=0, row=0, sticky='W')
+
+angleW_label = ttk.Label(frame, text='Enter Water contact angle:')
+angleW_label.grid(column=0, row=2, sticky='W', )
+
+angleD_label = ttk.Label(frame, text='Enter Liquid contact angle:')
+angleD_label.grid(column=0, row=3, sticky='W', )
+
+angle_w = tk.StringVar()
+angle_w_entry = ttk.Entry(frame, textvariable=angle_w)
+angle_w_entry.grid(column=1, row=2)
+angle_w_entry.focus()
+
+angle_l = tk.StringVar()
+angle_l_entry = ttk.Entry(frame, textvariable=angle_l)
+angle_l_entry.grid(column=1, row=3)
+angle_l_entry.focus()
+
+# calculate button action
+def calculator_button_clicked():
+    try:
+        angleWW = float(angle_w.get())
+        angleDD = float(angle_l.get())
+        #        polDD = float(pol_liquid)
+        #        dispDD = float(disp_liquid)
+
+        surD, surP = sfe_calculation(angleWW, angleDD)
+
+        result_row1 = f'Dispersive component is {round(surD ** 2, 2)} mN/m '
+        result_row2 = f'Polar component is {round(surP ** 2, 2)} mN/m '
+        result_row3 = f'Total SFE is {round((surD ** 2) + (surP ** 2), 2)} mN/m'
+        result_row1_label.config(text=result_row1)
+        result_row2_label.config(text=result_row2)
+        result_row3_label.config(text=result_row3)
+
+    except ValueError as error:
+        showerror(title='Error', message=error)
+
+# GUI buttons
+convert_button = ttk.Button(frame, text='Calculate')
+convert_button.grid(column=3, row=2, sticky='E')
+convert_button.configure(command=calculator_button_clicked)
+
+exit_button = ttk.Button(frame, text='Exit')
+exit_button.grid(column=3, row=3, sticky='E')
+exit_button.configure(command=lambda: root.quit())
+
+# result label
+result_row1_label = ttk.Label(frame)
+result_row1_label.grid(column=0, row=5, columnspan=2, sticky='E', )
+result_row2_label = ttk.Label(frame)
+result_row2_label.grid(column=2, row=5, columnspan=2, sticky='W', )
+result_row3_label = ttk.Label(frame)
+result_row3_label.grid(column=4, row=5, columnspan=2, sticky='E', )
+
+# add padding to the frame and show it
+frame.grid(padx=5, pady=5)
+
+# start the app
+root.mainloop()
